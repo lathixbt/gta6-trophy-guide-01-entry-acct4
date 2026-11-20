@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#d9c49c">
+  <title>Leonida Field Notes</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to journal</a>
+  <div class="binding">
+    <header class="cover">
+      <div class="masthead"><span>Grand Theft Auto VI · PS5</span><span>Field edition / 20 Nov 2026</span></div>
+      <div class="cover-grid">
+        <div class="cover-copy">
+          <h1>Leonida <em>Field Notes</em></h1>
+          <p class="subtitle">a field journal to the platinum</p>
+          <p class="cover-facts"><b>55</b> trophies <span>·</span> <b>~200 h</b> <span>·</span> one playthrough <span>·</span> offline</p>
+        </div>
+        <section class="progress" aria-label="Platinum progress">
+          <div class="dial">
+            <svg id="progress-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34"/><circle id="progress-arc" cx="40" cy="40" r="34" pathLength="100" stroke-dasharray="0 100"/></svg>
+            <strong id="percent">0%</strong>
+          </div>
+          <div><p class="eyebrow">Platinum log</p><strong id="earned-count">0 / 55 earned</strong><div id="grades" class="grades"></div><small id="remaining"></small></div>
+        </section>
+      </div>
+    </header>
+    <nav id="tabs" aria-label="Journal pages">
+      <button type="button" data-view="journal" aria-current="page">Journal</button>
+      <button type="button" data-view="tracker">Tracker</button>
+      <button type="button" data-view="missables">Missables</button>
+      <button type="button" data-view="planner">Planner</button>
+      <button type="button" data-view="sources">Sources</button>
+    </nav>
+    <section class="toolbar" aria-label="Journal controls">
+      <label class="search"><span>Search</span><input id="search" type="search" placeholder="Find a trophy or task"></label>
+      <label class="shield"><input id="spoiler" type="checkbox" checked> Spoiler shield</label>
+      <label class="character">Character <select id="character"><option value="both">Both</option><option value="jason">Jason</option><option value="lucia">Lucia</option></select></label>
+      <div class="tools"><button id="print" type="button">Print checklist</button><button id="copy" type="button">Copy link</button></div>
+    </section>
+    <p id="status" role="status"></p>
+    <main id="content" tabindex="-1"><p>Opening the journal…</p></main>
+    <footer>Leonida Field Notes · <kbd>j</kbd> / <kbd>k</kbd> select · <kbd>x</kbd> mark earned · <kbd>/</kbd> search</footer>
+    <section id="print-checklist" aria-label="Printable trophy checklist"></section>
+  </div>
+</body>
+</html>
