@@ -1,0 +1,6 @@
+[
+  { "file": "1-journal.jpg", "path": "/", "view": "journal", "viewport": { "width": 1280, "height": 800 } },
+  { "file": "2-tracker.jpg", "path": "/", "view": "tracker", "viewport": { "width": 1280, "height": 800 } },
+  { "file": "3-missables.jpg", "path": "/", "view": "missables", "viewport": { "width": 1280, "height": 800 } },
+  { "file": "4-sources.jpg", "path": "/", "view": "sources", "viewport": { "width": 1280, "height": 800 } }
+]
