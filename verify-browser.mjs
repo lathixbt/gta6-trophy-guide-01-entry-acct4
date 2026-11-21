@@ -35,7 +35,7 @@ async function check(label, verify) {
 try {
   await check("Page loads from the local bundle", async () => {
     await page.goto(entry);
-    await page.getByRole("heading", { name: "Journal index" }).waitFor();
+    await page.getByRole("heading", { name: "Tracker — all 55 trophies" }).waitFor();
   });
   await check("Title", async () => assert.match(await page.title(), /Leonida Field Notes/));
   await check("55 trophy rows", async () => { await tab("tracker"); assert.equal(await rows.count(), 55); });
@@ -105,7 +105,7 @@ try {
     assert.match(await text("#trophy-28 .confidence[data-level=medium]"), /medium/i);
   });
   await check("Keyboard j and k select, x checks, slash opens search", async () => {
-    await page.locator("h2").click();
+    await page.locator("h2:visible").first().click();
     const selected = () => rows.locator("xpath=self::*[@data-selected=\"true\"]").getAttribute("data-id");
     const before = await selected();
     await page.keyboard.press("j");

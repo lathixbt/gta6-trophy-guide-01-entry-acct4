@@ -22,10 +22,10 @@ try {
       url.hash = new URLSearchParams({ ...state, spoiler: "1", earned: state.earned.join(",") }).toString();
       await page.goto(url.href);
       await page.locator(`#tabs [data-view="${view}"][aria-current]`).waitFor();
-      await page.locator("h2").first().waitFor();
+      await page.locator("h2:visible").first().waitFor();
       if (view === "tracker") {
-        await page.locator("[data-guide=\"28\"]").click();
-        await page.locator("#guide-28").waitFor();
+        await page.locator("[data-guide=\"1\"]").click();
+        await page.locator("#guide-1").waitFor();
         await page.evaluate(() => window.scrollTo(0, 0));
       }
       await page.evaluate(() => document.fonts.ready);
