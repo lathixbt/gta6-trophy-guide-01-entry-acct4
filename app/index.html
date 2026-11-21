@@ -1,50 +1,177 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#d9c49c">
-  <title>Leonida Field Notes</title>
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leonida Field Notes — GTA VI Trophy Guide &amp; Tracker</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <a class="skip" href="#content">Skip to journal</a>
-  <div class="binding">
-    <header class="cover">
-      <div class="masthead"><span>Grand Theft Auto VI · PS5</span><span>Field edition / 20 Nov 2026</span></div>
-      <div class="cover-grid">
-        <div class="cover-copy">
-          <h1>Leonida <em>Field Notes</em></h1>
-          <p class="subtitle">a field journal to the platinum</p>
-          <p class="cover-facts"><b>55</b> trophies <span>·</span> <b>~200 h</b> <span>·</span> one playthrough <span>·</span> offline</p>
-        </div>
-        <section class="progress" aria-label="Platinum progress">
-          <div class="dial">
-            <svg id="progress-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34"/><circle id="progress-arc" cx="40" cy="40" r="34" pathLength="100" stroke-dasharray="0 100"/></svg>
-            <strong id="percent">0%</strong>
-          </div>
-          <div><p class="eyebrow">Platinum log</p><strong id="earned-count">0 / 55 earned</strong><div id="grades" class="grades"></div><small id="remaining"></small></div>
-        </section>
-      </div>
-    </header>
-    <nav id="tabs" aria-label="Journal pages">
-      <button type="button" data-view="journal" aria-current="page">Journal</button>
-      <button type="button" data-view="tracker">Tracker</button>
-      <button type="button" data-view="missables">Missables</button>
-      <button type="button" data-view="planner">Planner</button>
-      <button type="button" data-view="sources">Sources</button>
-    </nav>
-    <section class="toolbar" aria-label="Journal controls">
-      <label class="search"><span>Search</span><input id="search" type="search" placeholder="Find a trophy or task"></label>
-      <label class="shield"><input id="spoiler" type="checkbox" checked> Spoiler shield</label>
-      <label class="character">Character <select id="character"><option value="both">Both</option><option value="jason">Jason</option><option value="lucia">Lucia</option></select></label>
-      <div class="tools"><button id="print" type="button">Print checklist</button><button id="copy" type="button">Copy link</button></div>
-    </section>
-    <p id="status" role="status"></p>
-    <main id="content" tabindex="-1"><p>Opening the journal…</p></main>
-    <footer>Leonida Field Notes · <kbd>j</kbd> / <kbd>k</kbd> select · <kbd>x</kbd> mark earned · <kbd>/</kbd> search</footer>
-    <section id="print-checklist" aria-label="Printable trophy checklist"></section>
+<noscript><p style="padding:12px;border:1px solid #8a2f2b">Leonida Field Notes needs JavaScript: the tracker, filters and saved progress all run in your browser, offline.</p></noscript>
+<header class="masthead">
+  <div class="mast-top"><span>GRAND THEFT AUTO VI — PS5</span><span>FIELD EDITION · 20 NOV 2026</span></div>
+  <h1>Leonida <em>Field Notes</em></h1>
+  <p class="subtitle">A 55-trophy field journal — every stamp cited, every dispute shown both ways.</p>
+</header>
+
+<div class="topbar">
+  <svg id="progress-ring" viewBox="0 0 64 64" width="56" height="56" role="img" aria-label="Progress ring">
+    <circle cx="32" cy="32" r="26" class="ring-bg"></circle>
+    <circle cx="32" cy="32" r="26" class="ring-fg" id="ring-fg"></circle>
+    <text x="32" y="36" class="ring-text" id="ring-text">0%</text>
+  </svg>
+  <div class="counts">
+    <span class="big" id="earned-count">0 / 55 earned</span>
+    <span id="grades">0/1P0/2G0/6S0/46B</span>
+    <span id="dual-count">Jason 0/55 · Lucia 0/55</span>
+    <span id="collectibles">Collectibles 0/4 logged</span>
+    <span id="remaining">200 h remaining (estimate)</span>
   </div>
+  <div class="actions">
+    <label class="spoiler-wrap"><input type="checkbox" id="spoiler" checked> Spoiler shield</label>
+    <button id="export" type="button">Export</button>
+    <label class="import-btn" for="import">Import<input type="file" id="import" accept=".json,application/json" hidden></label>
+    <button id="copy" type="button">Copy link</button>
+    <button id="print" type="button">Print checklist</button>
+    <span class="saved-badge">✓ SAVED IN THIS BROWSER</span>
+  </div>
+</div>
+
+<div class="audit" id="audit" aria-label="Audit"></div>
+
+<nav id="tabs" role="tablist" aria-label="Views">
+  <button type="button" data-view="tracker" aria-current="true">Tracker</button>
+  <button type="button" data-view="roadmap">Roadmap</button>
+  <button type="button" data-view="missables">Missables</button>
+  <button type="button" data-view="journal">Journal</button>
+  <button type="button" data-view="planner">Planner</button>
+  <button type="button" data-view="sources">Sources</button>
+</nav>
+
+<main>
+  <section class="view" id="view-tracker">
+    <h2>Tracker — all 55 trophies</h2>
+    <div class="tracker-layout">
+      <div class="tracker-main">
+        <div class="controls">
+          <input id="search" type="search" placeholder="Search name, description…" aria-label="Search trophies" autocomplete="off">
+          <select id="filter-kind" aria-label="Filter by kind">
+            <option value="all">All kinds</option>
+            <option value="story">Story</option>
+            <option value="missable">Missable</option>
+            <option value="collectibles">Collectibles</option>
+            <option value="activities">Activities</option>
+            <option value="online">Online</option>
+          </select>
+          <select id="filter-grade" aria-label="Filter by grade">
+            <option value="all">All grades</option>
+            <option value="platinum">Platinum</option>
+            <option value="gold">Gold</option>
+            <option value="silver">Silver</option>
+            <option value="bronze">Bronze</option>
+          </select>
+          <select id="filter-chapter" aria-label="Filter by chapter">
+            <option value="all">All chapters</option>
+            <option>Chapter 1</option>
+            <option>Chapter 2</option>
+            <option>Chapter 3</option>
+            <option>Chapter 4</option>
+            <option>Chapter 5</option>
+            <option>Post-story</option>
+            <option>Activities</option>
+            <option>Strangers</option>
+            <option>Crime</option>
+            <option>Misc</option>
+            <option>Money</option>
+            <option>Platinum</option>
+          </select>
+          <select id="filter-confidence" aria-label="Filter by confidence">
+            <option value="all">Any confidence</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select id="character" aria-label="Filter by character">
+            <option value="both">Both characters</option>
+            <option value="jason">Jason</option>
+            <option value="lucia">Lucia</option>
+          </select>
+          <button id="clear-filters" type="button">Clear filters</button>
+        </div>
+        <div class="chips" id="chips" aria-label="Quick filters"></div>
+        <div id="trophy-list" role="list"></div>
+        <p class="empty" id="empty" hidden></p>
+      </div>
+      <aside class="rail" aria-label="Next up and sources">
+        <section class="nextup">
+          <h3>NEXT UP · ROADMAP ORDER</h3>
+          <ol id="next-up"></ol>
+        </section>
+        <section class="rail-sources">
+          <h3>SOURCES FOR THIS GUIDE</h3>
+          <ol id="rail-sources"></ol>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <section class="view" id="view-roadmap" hidden>
+    <h2>Roadmap</h2>
+    <div id="roadmap">
+      <ul>
+        <li><strong>Stage 1 — 60–80 h · Story and optional jobs.</strong> Play the main route with Lucia and Jason, scan cars, study animals and take the balcony detour in Chapter 1. Keep 15 manual saves plus autosave; never let the autosave be your only copy.</li>
+        <li><strong>Stage 2 — ~100 h · The 100% checklist.</strong> Finish the in-game completion list: optional missions, vehicles, animals, meditations, challenges, stunts and WAiNK scans. Most lists accept a quota, and scans and studies from the story already count.</li>
+        <li><strong>Stage 3 — ~10 h · Cleanup and loose ends.</strong> Wrap up stranger strands, bank vaults and the last collectible sets, then let the platinum land. One playthrough · ~200 h. Cheats disable trophies, so leave them alone until the platinum is yours.</li>
+      </ul>
+      <p class="roadmap-note">15 manual saves plus autosave. Cheats disable trophies. Hardest stamp: A Long Road.</p>
+    </div>
+    <div class="roadmap-chapters">
+      <h3>Chapter index</h3>
+      <ol id="roadmap-chapter-list"></ol>
+    </div>
+  </section>
+
+  <section class="view" id="view-missables" hidden>
+    <h2>Missables &amp; at-risk</h2>
+    <p class="view-intro">One trophy is possibly missable. Eight stamps are at risk because a step or a trigger is still unconfirmed — each card says what is known, what is not, and what to do first.</p>
+    <div id="missable-cards"></div>
+  </section>
+
+  <section class="view" id="view-journal" hidden>
+    <h2>Journal — by chapter</h2>
+    <p class="view-intro">I keep a page for each chapter, then turn to the checklist after the credits.</p>
+    <div id="journal-chapters"></div>
+  </section>
+
+  <section class="view" id="view-planner" hidden>
+    <h2>Session planner</h2>
+    <p class="view-intro">Pick a session length. The missable always goes first; the rest follows the roadmap in 15-minute blocks.</p>
+    <div class="plan-buttons">
+      <button type="button" data-minutes="30">30 minutes</button>
+      <button type="button" data-minutes="60">60 minutes</button>
+      <button type="button" data-minutes="120">120 minutes</button>
+    </div>
+    <p id="plan-total"></p>
+    <ol class="plan" id="plan"></ol>
+  </section>
+
+  <section class="view" id="view-sources" hidden>
+    <h2>Sources</h2>
+    <p class="view-intro">Every claim in this journal cites one of these 18 sources, read 20 Nov 2026. [1]–[8] were read in full; [9]–[18] via detailed search excerpts.</p>
+    <ol class="source-list" id="source-list"></ol>
+    <h3>Disputes — both versions shown</h3>
+    <p class="view-intro">Where the sources disagree, both versions are kept and the journal states its call.</p>
+    <div id="disputes"></div>
+  </section>
+</main>
+
+<section id="print-checklist" aria-hidden="true">
+  <h2>Printable checklist — Leonida Field Notes</h2>
+  <ul id="print-list"></ul>
+</section>
+
+<p role="status" id="status" aria-live="polite"></p>
+
+<script src="app.js"></script>
 </body>
 </html>

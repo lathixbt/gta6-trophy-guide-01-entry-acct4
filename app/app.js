@@ -1,382 +1,613 @@
-const byId = id => document.getElementById(id);
-const storageKey = "leonida-field-notes-v1";
-const grades = { platinum: "P", gold: "G", silver: "S", bronze: "B" };
-const views = ["journal", "tracker", "missables", "planner", "sources"];
-const options = {
-  kind: ["story", "missable", "collectibles", "activities", "online"],
-  grade: Object.keys(grades),
-  chapter: ["Chapter 1", "Chapter 2", "Chapter 3", "Chapter 4", "Chapter 5", "Post-story", "Strangers", "Activities", "Crime", "Misc", "Money", "Platinum"],
-  confidence: ["high", "medium", "low"],
+"use strict";
+
+const STORE_KEY = "leonida-field-notes-v1";
+const HOURS = { story: 4, missable: 4, collectibles: 8, activities: 3, online: 0 };
+const GRADE_LETTER = { platinum: "P", gold: "G", silver: "S", bronze: "B" };
+const GRADE_TOTAL = { platinum: 1, gold: 2, silver: 6, bronze: 46 };
+
+const SOURCES = [
+  { name: "PowerPyx", title: "GTA 6 (Grand Theft Auto VI) Trophy Guide & Roadmap", url: "https://powerpyx.com/gta-6-grand-theft-auto-vi-trophy-guide-roadmap/" },
+  { name: "planetgta6.com", title: "GTA 6 Trophies: All 55 trophies and Xbox achievements", url: "https://planetgta6.com/en/gta-6-trophies/" },
+  { name: "Push Square", title: "GTA 6: Trophy Guide & Roadmap (WIP)", url: "https://pushsquare.com/guides/gta-6-trophy-guide-and-roadmap" },
+  { name: "GTABase", title: "GTA 6 Trophy Guide & Achievements List (PS5 & Xbox Series X|S)", url: "https://gtabase.com/articles/gta-6/gta-6-achievements-trophies-list-ps5-xbox-series" },
+  { name: "sixshore.com", title: "GTA 6 Trophy and Achievement List: All 55, Missables and Roadmap", url: "https://sixshore.com/gta-6/guides/trophies-and-achievements/" },
+  { name: "Insider Gaming", title: "Complete GTA 6 Trophy List—How To Get All Trophies & Achievements", url: "https://insider-gaming.com/complete-gta-6-trophy-list-how-to-get-all-trophies-achievements/" },
+  { name: "Radio Times", title: "GTA 6 trophy guide: Full list of trophies and achievements", url: "https://radiotimes.com/technology/gaming/gta-6-trophies-achievements-list/" },
+  { name: "KeenGamer", title: "GTA 6 Trophy Guide & Platinum Roadmap – All 55 Trophies", url: "https://keengamer.com/articles/guides/gta-6-trophy-guide-platinum-roadmap-all-55-trophies/" },
+  { name: "GTA Scoop", title: "GTA 6 Trophies & Achievements: Full List of 55 and Platinum", url: "https://gtascoop.com/guides/gta-6-trophies-achievements/" },
+  { name: "One More Game", title: "Grand Theft Auto VI Trophy List", url: "https://onemoregame.ph/2026/11/grand-theft-auto-vi-trophy-list/" },
+  { name: "Vice City Hustle", title: "GTA 6 Trophy List: All 55 Trophies and Achievements", url: "https://vicecityhustle.com/guides/gta-6-trophy-list-all-55-trophies" },
+  { name: "GTA Spotter", title: "GTA VI trophies and achievements: the full official list", url: "https://gtaspotter.com/en/guides/gta-6-trophies-and-achievements/" },
+  { name: "EGamers.io", title: "GTA 6 Trophy List: All 55 Trophies And Achievements, Plus The Hardest Ones", url: "https://egamers.io/gta-6-trophy-list-all-55-trophies-and-achievements-plus-the-hardest-ones/" },
+  { name: "Games.gg", title: "GTA 6 Trophy List: How to Unlock All Achievements & Trophies", url: "https://games.gg/grand-theft-auto-vi/guides/complete-grand-theft-auto-6-trophy-list/" },
+  { name: "GTA Vibes", title: "GTA 6 Trophy List: All 55 Trophies and Achievements", url: "https://gtavibes.com/guides/gta-6-trophy-list-achievements" },
+  { name: "Mobalytics", title: "Grand Theft Auto 6 - Full Trophy List & Walkthrough", url: "https://mobalytics.gg/gamebase/guides/grand-theft-auto-6-all-trophies" },
+  { name: "Of Zen and Computing", title: "GTA 6 Trophy List (November 2026) All 55 Trophies", url: "https://ofzenandcomputing.com/gta-6-trophy-list-trophies-achievements/" },
+  { name: "GameTrek", title: "GTA 6 Trophy Guide: All 55 Achievements and Platinum Roadmap", url: "https://gmtreks.com/gta6/page/01M7Q14ZF65PPK5FFXSY3CJNKQ" }
+];
+
+const DISPUTES = [
+  { id: "D1", trophy: 28, topic: "Is there a missable trophy?",
+    a: "Possibly 1 (#28) — [1][4][5][8][9][13][16].",
+    b: "None known — [3]; \u201ccan\u2019t tell yet\u201d — [2].",
+    call: "Treat #28 as missable — take the balcony meditation in Chapter 1 either way." },
+  { id: "D2", trophy: 14, topic: "Time to platinum",
+    a: "~200 h — [1][4][8][9].",
+    b: "200–250+ h [5]; 250+/300 h [3].",
+    call: "~200 h is the modal estimate; 300 h is the outlier." },
+  { id: "D3", trophy: 40, topic: "#40 Maximum Withdrawal grade",
+    a: "Silver — 14 sources including the PSN list [2].",
+    b: "Bronze — [3] only.",
+    call: "Silver. One source against fourteen, PSN included." },
+  { id: "D4", trophy: 17, topic: "Shooting-range locations",
+    a: "12 ranges / 42 challenges — [1][4][18].",
+    b: "2 locations — [3].",
+    call: "12 ranges, 42 challenges." },
+  { id: "D5", trophy: 47, topic: "Hidden count",
+    a: "28 hidden — [2][4][5][6].",
+    b: "27 hidden — [3] (Personal Best not marked hidden).",
+    call: "28 hidden. Personal Best is hidden on PSN." },
+  { id: "D6", trophy: 7, topic: "#7 description",
+    a: "\u201cComplete the final mission\u201d — PSN [2].",
+    b: "\u201cComplete Chapter 5\u201d — [6].",
+    call: "\u201cComplete the final mission\u201d. PSN wording wins." },
+  { id: "D7", trophy: 1, topic: "Gamerscore values",
+    a: "Varied values (TrueAchievements-sourced) — [2][4][5].",
+    b: "Flat 50G/10G — [17].",
+    call: "Varied values. The flat table contradicts the PSN-sourced lists." },
+  { id: "D8", trophy: 17, topic: "One More Game grade split",
+    a: "1P/3G/14S/18B (= 36) — [10]; it also lists The Shootist as Bronze.",
+    b: "1P/2G/6S/46B — 17 sources.",
+    call: "Disregard [10] grades. Its split does not even add up to 55." },
+  { id: "D9", trophy: 3, topic: "GameTrek chapter numbers",
+    a: "PSN chapters — [1][2][4].",
+    b: "Off by one — [18] (Paradise Lost as \u201cChapter 2\u201d).",
+    call: "PSN chapters. Paradise Lost completes Chapter 1." },
+  { id: "D10", trophy: 25, topic: "Strangers & Freaks qualifying strands",
+    a: "Kirk, Kyle, Yago and Pilot Pete count; Moses, Tyrone, Yasmani, Andy, Billy and Eddie do not — [1][4].",
+    b: "The remaining strands are unconfirmed.",
+    call: "Use the in-game counter. Start with the four confirmed strands." }
+];
+
+const DISPUTE_BY_TROPHY = {};
+for (const d of DISPUTES) (DISPUTE_BY_TROPHY[d.trophy] = DISPUTE_BY_TROPHY[d.trophy] || []).push(d);
+
+const ROADMAP_ORDER = [28, 2, 3, 4, 8, 5, 9, 6, 10, 11, 12, 7, 13, 22, 23, 24, 26, 27, 29, 14, 15, 16, 17, 18, 19, 20, 21, 25, 30, 31, 32, 35, 42, 33, 34, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 1];
+
+const CHAPTERS = [
+  { title: "Chapter 1 — The Keys & the balcony", ids: [2, 28, 3] },
+  { title: "Chapter 2 — Port Gellhorn & the handoff", ids: [4, 8] },
+  { title: "Chapter 3 — Into Vice City", ids: [5, 9] },
+  { title: "Chapter 4 — The long way home", ids: [6, 10, 11, 12] },
+  { title: "Chapter 5 — The final stretch", ids: [7, 13] },
+  { title: "Post-story 100% — Quotas, sets & checklists", ids: [14, 15, 16, 17, 18, 19, 20, 21, 30, 31, 32, 35, 42] },
+  { title: "Cleanup — Loose ends & the platinum", ids: [1, 22, 23, 24, 25, 26, 27, 29, 33, 34, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55] }
+];
+
+let TROPHIES = [];
+const byId = id => TROPHIES.find(t => t.id === id);
+
+const state = {
+  view: "tracker", earned: new Set(), spoiler: true, counts: {},
+  kind: "all", grade: "all", chapter: "all", confidence: "all",
+  character: "both", search: "", chip: "all",
+  selectedId: null, openGuide: null
 };
-const fields = { ...options, character: ["jason", "lucia"] };
-const sources = ["PowerPyx", "planetgta6.com", "Push Square", "GTABase", "sixshore.com", "Insider Gaming", "Radio Times", "KeenGamer", "GTA Scoop", "One More Game", "Vice City Hustle", "GTA Spotter", "EGamers.io", "Games.gg", "GTA Vibes", "Mobalytics", "Of Zen and Computing", "GameTrek"];
-const disputes = [
-  ["Is anything missable?", "Seven guides flag the balcony [1][4][5][8][9][13][16]. Push Square knows of none [3]. planetgta6 leaves it open [2].", "Take Lucia’s Chapter 1 invitation. Its necessity is unconfirmed."],
-  ["How long is the trip?", "Most estimate ~200 h [1][4][8][9]. sixshore gives 200–250+ h and quotes a reviewer at well over 100 h [5]. Push Square allows 250–300+ h [3].", "Budget about 200 hours and allow longer for cleanup."],
-  ["Maximum Withdrawal grade", "PSN and 13 other guides report silver [1][2][4][5][6][7][8][9][11][12][13][14][15][16]. Push Square lists bronze [3].", "Record it as silver, matching PSN and the 1P / 2G / 6S / 46B split."],
-  ["Twelve ranges or two?", "Three guides count 12 ranges [1][4][18]. Push Square names two venues [3]. Both report 42 challenges.", "Use 12 ranges for planning and 42 golds as the finish line."],
-  ["How many hidden trophies?", "The PSN-sourced list includes Personal Best among 28 hidden trophies [2][4][5][6]. Push Square leaves it visible [3].", "Use 28 hidden and keep Personal Best marked hidden."],
-  ["Final mission or Chapter 5?", "The PSN list specifies the final mission [2]. Insider Gaming calls it a Chapter 5 completion [6].", "Use the exact PSN description for trophy #7."],
-  ["Xbox Gamerscore values", "TrueAchievements-derived lists give varied values [2][4][5]. Of Zen and Computing gives flat 50G silvers and 10G bronzes [17]. EGamers omits values [13].", "Favor the varied figures when cross-checking Xbox. This journal tracks PS5 grades."],
-  ["Grade tally mismatch", "One More Game gives 1P / 3G / 14S / 18B and calls The Shootist bronze [10]. The PSN list and corroborating guides account for all 55 [1][2][4].", "Use 1P / 2G / 6S / 46B and record The Shootist as silver."],
-  ["Chapter numbers shifted", "GameTrek attaches Paradise Lost and T**s Ass Drug Money to Chapters 2 and 3 [18]. PSN and the main guides attach them to Chapters 1 and 2 [1][2][4].", "Index them under Chapters 1 and 2. Their unlocks arrive as the next chapter begins."],
-  ["Which stranger strands count?", "Kirk, Kyle, Yago and Pilot Pete count. Moses, Tyrone, Yasmani, Andy, Billy and Eddie do not. Other qualifying strands are unresolved [1][4].", "Check the PS5 trophy counter after each candidate strand."],
-];
-const chapters = [
-  ["Chapter 1", "The Keys & the balcony", [2, 28, 3]],
-  ["Chapter 2", "Port Gellhorn & the handoff", [8, 4]],
-  ["Chapter 3", "Into Vice City", [9, 5]],
-  ["Chapter 4", "The long way home", [10, 11, 12, 6]],
-  ["Chapter 5", "The final stretch", [13, 7]],
-  ["Post-story 100%", "Quotas, sets & checklists", [14, 35, 31, 30, 15, 17, 18, 19, 32, 29, 43, 40, 52]],
-  ["Cleanup", "Loose ends & the platinum", [20, 23, 24, 22, 26, 27, 25, 16, 21, 33, 34, 36, 39, 41, 42, 37, 38, 44, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 1]],
-];
-const quotas = ["100 optional missions", "200 / 277 base-model vehicle scans", "100 / 255 animal studies", "15 / 18 meditations", "70 / 80 challenges", "300 / 397 stunts", "100 WAiNK scans", "15 / 18 card sets", "33 underwater discoveries", "42 shooting-range golds", "42 drone races", "15 Bret Target Decks", "30 / 40 race wins", "10 / 13 race-challenge golds", "39 gang operations, 22 bank jobs, 7 payday loans and 8 bank vaults", "5 / 7 Kenton treasure sets", "30 / 34 books, comics and magazines", "100 / 125 Cocaine Flamingos", "2 unique playlists", "70 / 79 styles", "50 / 66 standard weapons", "34 / 35 Smash ’N’ Grabs", "50 / 91 Stick Ups", "$100,000 each in fenced narcotics and jewelry", "$250,000 in fenced marked bills and $200,000 in fenced vehicles", "Play all 4 video games", "5 / 7 pool opponents", "2 / 3 mini golf sites", "90 / 100 basketball hoops"];
-const tracks = new Map();
-const openGuides = new Set();
-const openChapters = new Set();
-let selection = null;
-let sessionMinutes = 30;
-let missablesVisited = false;
-let statusTimer;
-let state;
 
-function cleanState(raw = {}) {
-  const earned = Array.isArray(raw.earned) ? raw.earned.filter(id => tracks.has(id)) : [];
-  const clean = {
-    earned: new Set(earned),
-    spoiler: raw.spoiler !== false,
-    view: views.includes(raw.view) ? raw.view : "journal",
-    query: typeof raw.query === "string" ? raw.query.slice(0, 150) : "",
-  };
-  for (const [key, values] of Object.entries(fields)) clean[key] = values.includes(raw[key]) ? raw[key] : "";
-  return clean;
-}
-
-function localState() {
-  try { return JSON.parse(localStorage.getItem(storageKey)) ?? {}; }
-  catch { return {}; }
-}
-
-function hashState() {
-  const params = new URLSearchParams(location.hash.slice(1));
-  if (!params.has("view") && !params.has("earned")) return null;
-  return { ...Object.fromEntries(params), spoiler: params.get("spoiler") !== "0", earned: (params.get("earned") ?? "").split(",").map(Number) };
-}
-
-function snapshot() {
-  return { ...state, earned: [...state.earned].sort((first, second) => first - second) };
-}
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+const citeLinks = cites => cites.map(n => `<a href="#" data-cite="${n}">[${n}]</a>`).join(" ");
+const masked = t => state.spoiler && t.hidden && !state.earned.has(t.id);
+const disputedIds = new Set(DISPUTES.map(d => d.trophy));
 
 function save() {
-  const stored = snapshot();
-  try { localStorage.setItem(storageKey, JSON.stringify(stored)); }
-  catch { notify("Local storage is unavailable. Export a backup to keep this session."); }
-  const params = new URLSearchParams({ view: stored.view, earned: stored.earned.join(","), spoiler: stored.spoiler ? "1" : "0" });
-  for (const key of [...Object.keys(fields), "query"]) if (stored[key]) params.set(key, stored[key]);
-  history.replaceState(null, "", `#${params}`);
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      view: state.view, earned: [...state.earned].sort((a, b) => a - b),
+      spoiler: state.spoiler, counts: state.counts
+    }));
+  } catch (e) { /* storage unavailable: the journal still works in memory */ }
 }
 
-function notify(message) {
-  clearTimeout(statusTimer);
-  byId("status").textContent = message;
-  statusTimer = setTimeout(() => { byId("status").textContent = ""; }, 4500);
+function loadStored() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.earned)) state.earned = new Set(data.earned.filter(n => Number.isInteger(n) && n >= 1 && n <= 55));
+    if (typeof data.spoiler === "boolean") state.spoiler = data.spoiler;
+    if (data.counts && typeof data.counts === "object") state.counts = data.counts;
+    if (typeof data.view === "string" && document.querySelector(`#tabs [data-view="${data.view}"]`)) state.view = data.view;
+  } catch (e) { /* corrupted storage: start clean */ }
 }
 
-function masked(trophy) {
-  return state.spoiler && trophy.hidden && trophy.kind === "story" && !state.earned.has(trophy.id);
+function loadHash() {
+  const raw = location.hash.replace(/^#/, "");
+  if (!raw) return;
+  const p = new URLSearchParams(raw);
+  if (p.has("view") && document.querySelector(`#tabs [data-view="${p.get("view")}"]`)) state.view = p.get("view");
+  if (p.has("earned")) state.earned = new Set(p.get("earned").split(",").map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 55));
+  if (p.has("spoiler")) state.spoiler = p.get("spoiler") !== "0";
+  for (const key of ["kind", "grade", "chapter", "confidence", "character", "search"]) {
+    if (p.has(key)) state[key] = p.get(key);
+  }
 }
 
-const redacted = "████████ — hidden until earned";
-const displayName = trophy => masked(trophy) ? redacted : trophy.name;
-const titleCase = text => text.charAt(0).toUpperCase() + text.slice(1);
-const safe = text => String(text).replace(/[&<>"\u0027]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "\u0027": "&#39;" })[character]);
-const namedCites = ids => ids.map(id => `[${id}] ${safe(sources[id - 1])}`).join(" · ");
-const matchesCharacter = (trophy, character) => !character || trophy.character === "both" || trophy.character === character;
+function buildHash() {
+  const p = new URLSearchParams();
+  p.set("view", state.view);
+  p.set("earned", [...state.earned].sort((a, b) => a - b).join(","));
+  if (state.kind !== "all") p.set("kind", state.kind);
+  if (state.grade !== "all") p.set("grade", state.grade);
+  if (state.chapter !== "all") p.set("chapter", state.chapter);
+  if (state.confidence !== "all") p.set("confidence", state.confidence);
+  if (state.character !== "both") p.set("character", state.character);
+  if (state.search) p.set("search", state.search);
+  p.set("spoiler", state.spoiler ? "1" : "0");
+  return "#" + p.toString();
+}
 
-function progress() {
-  const total = tracks.size;
-  const earned = [...state.earned].map(id => tracks.get(id));
-  const percent = Math.round(100 * earned.length / total);
-  byId("percent").textContent = `${percent}%`;
-  byId("progress-arc").setAttribute("stroke-dasharray", `${100 * earned.length / total} 100`);
-  byId("earned-count").textContent = `${earned.length} / ${total} earned`;
-  byId("grades").innerHTML = Object.entries(grades).map(([grade, symbol]) => {
-    const done = earned.filter(trophy => trophy.grade === grade).length;
-    const count = [...tracks.values()].filter(trophy => trophy.grade === grade).length;
-    return `<span title="${titleCase(grade)}">${done}/${count}${symbol}</span>`;
+function hoursLeft() {
+  let used = 0;
+  for (const id of state.earned) {
+    const t = byId(id);
+    if (t) used += HOURS[t.kind] || 0;
+  }
+  return 200 - used;
+}
+
+function renderTopbar() {
+  const earned = state.earned.size;
+  $("#earned-count").textContent = `${earned} / 55 earned`;
+  const per = { platinum: 0, gold: 0, silver: 0, bronze: 0 };
+  for (const id of state.earned) { const t = byId(id); if (t) per[t.grade]++; }
+  $("#grades").textContent = `${per.platinum}/1P${per.gold}/2G${per.silver}/6S${per.bronze}/46B`;
+  const jason = [...state.earned].filter(id => { const t = byId(id); return t && (t.character === "jason" || t.character === "both"); }).length;
+  const lucia = [...state.earned].filter(id => { const t = byId(id); return t && (t.character === "lucia" || t.character === "both"); }).length;
+  $("#dual-count").textContent = `Jason ${jason}/55 · Lucia ${lucia}/55`;
+  const coll = [...state.earned].filter(id => { const t = byId(id); return t && t.kind === "collectibles"; }).length;
+  $("#collectibles").textContent = `Collectibles ${coll}/4 logged`;
+  $("#remaining").textContent = `${hoursLeft()} h remaining (estimate)`;
+  const ring = $("#ring-fg");
+  ring.style.strokeDashoffset = String(163.4 * (1 - earned / 55));
+  $("#ring-text").textContent = `${Math.round(earned / 55 * 100)}%`;
+  $("#spoiler").checked = state.spoiler;
+}
+
+function renderAudit() {
+  const total = TROPHIES.length;
+  const official = TROPHIES.filter(t => t.name && t.description && t.grade).length;
+  const hidden = TROPHIES.filter(t => t.hidden).length;
+  const steps = TROPHIES.reduce((n, t) => n + t.steps.length, 0);
+  const cited = TROPHIES.reduce((n, t) => n + t.steps.filter(s => s.cites && s.cites.length).length, 0);
+  const citeGuides = TROPHIES.filter(t => t.sources && t.sources.length >= 1).length;
+  const backed = TROPHIES.filter(t => t.sources && t.sources.length >= 2).length;
+  const missable = TROPHIES.filter(t => t.missable).length;
+  const atRisk = TROPHIES.filter(t => t.confidence !== "high").length;
+  const sep = '<span class="sep">·</span>';
+  $("#audit").innerHTML =
+    `<b>${official}/${total}</b> official name, description, grade ${sep} <b>1P 2G 6S 46B</b> ${sep} <b>${hidden}</b> PSN-hidden ${sep} <b>${cited}/${steps}</b> steps cited ${sep} <b>${citeGuides}/${total}</b> guides cite sources ${sep} <b>${backed}/${total}</b> backed by 2+ sources ${sep} <b>${SOURCES.length}</b> pages · <b>${SOURCES.length}</b> sites · read 20 Nov 2026 ${sep} <b>${missable}</b> possibly missable ${sep} <b>${atRisk}</b> at risk ${sep} <b>0</b> fully unconfirmed ${sep} <b>${DISPUTES.length}</b> disputes shown both ways`;
+}
+
+function renderTabs() {
+  for (const btn of document.querySelectorAll("#tabs button")) {
+    if (btn.dataset.view === state.view) btn.setAttribute("aria-current", "true");
+    else btn.removeAttribute("aria-current");
+  }
+  for (const sec of document.querySelectorAll(".view")) {
+    sec.hidden = sec.id !== `view-${state.view}`;
+  }
+}
+
+function visibleTrophies() {
+  const q = state.search.trim().toLowerCase();
+  return TROPHIES.filter(t => {
+    if (state.kind !== "all" && t.kind !== state.kind) return false;
+    if (state.grade !== "all" && t.grade !== state.grade) return false;
+    if (state.chapter !== "all" && t.chapter !== state.chapter) return false;
+    if (state.confidence !== "all" && t.confidence !== state.confidence) return false;
+    if (state.character !== "both" && t.character !== state.character) return false;
+    if (state.chip === "hidden" && !t.hidden) return false;
+    if (state.chip === "disputed" && !disputedIds.has(t.id)) return false;
+    if (state.chip === "not-earned" && state.earned.has(t.id)) return false;
+    if (q && !(t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function rowHtml(t) {
+  const isMasked = masked(t);
+  const name = isMasked ? "Story trophy · hidden until earned" : esc(t.name);
+  const desc = isMasked ? "hidden until earned" : esc(t.description);
+  const earned = state.earned.has(t.id);
+  const gradeClass = `grade-${t.grade[0]}`;
+  const flags = [];
+  if (t.missable) flags.push('<span class="badge flag-missable">POSSIBLY MISSABLE</span>');
+  if (t.hidden) flags.push('<span class="badge flag-hidden">PSN-hidden</span>');
+  if (disputedIds.has(t.id)) flags.push('<span class="badge flag-disputed">DISPUTED</span>');
+  if (t.kind === "story") flags.push('<span class="badge">Story</span>');
+  const selected = state.selectedId === t.id ? "true" : "false";
+  return `<div class="row${earned ? " earned" : ""}" id="trophy-${t.id}" data-kind="${t.kind}" data-id="${t.id}" data-selected="${selected}" role="listitem">
+    <input type="checkbox" data-earned-id="${t.id}"${earned ? " checked" : ""} aria-label="Mark ${isMasked ? "this story trophy" : esc(t.name)} earned">
+    <div class="row-body">
+      <button type="button" class="guide-toggle" data-guide="${t.id}" aria-expanded="${state.openGuide === t.id}">
+        <span class="t-name">${name}</span>
+        <span class="t-desc">${desc}</span>
+        <span class="show-guide">Show guide ▸</span>
+      </button>
+      <div class="t-meta">
+        <span class="badge ${gradeClass}">${GRADE_LETTER[t.grade]}</span>
+        <span class="badge">${esc(t.chapter)}</span>
+        <span class="confidence" data-level="${t.confidence}">${t.confidence} confidence</span>
+        ${flags.join(" ")}
+      </div>
+      <div class="guide" id="guide-${t.id}"${state.openGuide === t.id ? "" : " hidden"}></div>
+    </div>
+  </div>`;
+}
+
+function guideHtml(t) {
+  if (masked(t)) return `<p>Hidden until earned — mark this trophy earned to read its guide.</p>`;
+  const parts = [];
+  parts.push(`<h4>OFFICIAL DESCRIPTION</h4><blockquote>&ldquo;${esc(t.description)}&rdquo; — ${t.grade} · #${t.id} of 55</blockquote>`);
+  parts.push(`<p>${esc(t.guide)}</p>`);
+  if (t.id === 28) {
+    parts.push(`<div class="missable-note"><b>POSSIBLY MISSABLE.</b> Last chance: Chapter 1 — before Tourist Trap. Lucia&rsquo;s balcony meditation exists only in Chapter 1, and no page has tested the trophy without it. ${citeLinks([1, 4, 5, 8])}</div>`);
+    const n = state.counts[28] || 0;
+    parts.push(`<div class="count-box"><button type="button" data-count="28" data-delta="-1" aria-label="One fewer meditation">−</button><span id="count-28">YOUR COUNT — ${n} / 18 meditations</span><button type="button" data-count="28" data-delta="1" aria-label="One more meditation">+</button></div>`);
+  }
+  parts.push(`<h4>HOW TO EARN IT — ${t.steps.length} step${t.steps.length === 1 ? "" : "s"} in our own words, each with its sources</h4>`);
+  parts.push(`<ol>${t.steps.map((s, i) => `<li>${esc(s.text)} ${citeLinks(s.cites)}</li>`).join("")}</ol>`);
+  for (const d of (DISPUTE_BY_TROPHY[t.id] || [])) {
+    parts.push(`<div class="dispute-note"><b>SOURCES DIFFER — ${esc(d.topic)}: both versions shown.</b><br>A · ${esc(d.a)}<br>B · ${esc(d.b)}<br><b>Our call.</b> ${esc(d.call)}</div>`);
+  }
+  parts.push(`<p><b>SOURCES FOR THIS GUIDE</b> — ${t.sources.map(n => `<a href="#" data-cite="${n}">[${n}] ${esc(SOURCES[n - 1].name)}</a>`).join(" · ")}</p>`);
+  return parts.join("");
+}
+
+function renderTracker() {
+  const list = visibleTrophies();
+  if (!list.some(t => t.id === state.selectedId)) state.selectedId = list.length ? list[0].id : null;
+  $("#trophy-list").innerHTML = list.map(rowHtml).join("");
+  for (const t of list) {
+    if (state.openGuide === t.id) {
+      const panel = $(`#guide-${t.id}`);
+      if (panel) panel.innerHTML = guideHtml(t);
+    }
+  }
+  const empty = $("#empty");
+  if (list.length === 0) {
+    empty.hidden = false;
+    empty.textContent = state.kind === "online"
+      ? "No online trophies — GTA VI has none [1][4]"
+      : "No trophies match these filters.";
+  } else {
+    empty.hidden = true;
+  }
+  renderChips();
+  renderRail();
+}
+
+function renderChips() {
+  const count = (fn) => TROPHIES.filter(fn).length;
+  const chips = [
+    { key: "all", label: `All 55` },
+    { key: "story", label: `Story ${count(t => t.kind === "story")}` },
+    { key: "missable", label: `Missable ${count(t => t.kind === "missable")}` },
+    { key: "collectibles", label: `Collectibles ${count(t => t.kind === "collectibles")}` },
+    { key: "activities", label: `Activities ${count(t => t.kind === "activities")}` },
+    { key: "online", label: `Online ${count(t => t.kind === "online")}` },
+    { key: "hidden", label: `${count(t => t.hidden)} PSN-hidden` },
+    { key: "disputed", label: `Disputed ${DISPUTES.length}` },
+    { key: "not-earned", label: `Not earned ${55 - state.earned.size}` },
+    { key: "grade-p", label: `P ${GRADE_TOTAL.platinum}` },
+    { key: "grade-g", label: `G ${GRADE_TOTAL.gold}` },
+    { key: "grade-s", label: `S ${GRADE_TOTAL.silver}` },
+    { key: "grade-b", label: `B ${GRADE_TOTAL.bronze}` }
+  ];
+  $("#chips").innerHTML = chips.map(c => {
+    let active = false;
+    if (c.key === "all") active = state.chip === "all" && state.kind === "all" && state.grade === "all";
+    else if (c.key === state.kind) active = true;
+    else if (c.key === `grade-${state.grade[0]}` && state.grade !== "all") active = true;
+    else if (c.key === state.chip) active = true;
+    return `<button type="button" data-chip="${c.key}" aria-pressed="${active}">${esc(c.label)}</button>`;
   }).join("");
-  byId("remaining").textContent = `~${Math.round(200 * (total - earned.length) / total)} h remaining (estimate)`;
-  byId("print-checklist").innerHTML = `<h1>Leonida Field Notes</h1><p>${earned.length} of ${total} earned · PS5 checklist</p><ol>${[...tracks.values()].map(trophy => `<li>${state.earned.has(trophy.id) ? "☑" : "☐"} ${safe(displayName(trophy))} · ${titleCase(trophy.grade)}</li>`).join("")}</ol>`;
 }
 
-function characterCounts() {
-  return ["jason", "lucia"].map(character => {
-    const count = [...state.earned].filter(id => matchesCharacter(tracks.get(id), character)).length;
-    return `${titleCase(character)} ${count}/${tracks.size}`;
-  }).join(" · ");
+function renderRail() {
+  const next = ROADMAP_ORDER.filter(id => !state.earned.has(id)).slice(0, 5);
+  $("#next-up").innerHTML = next.map(id => {
+    const t = byId(id);
+    const pos = ROADMAP_ORDER.indexOf(id) + 1;
+    return `<li><b>${pos}.</b> ${esc(t.name)} · ${t.grade} · ${esc(t.chapter)}${t.missable ? " · missable" : ""}</li>`;
+  }).join("");
+  $("#rail-sources").innerHTML = SOURCES.map((s, i) =>
+    `<li><a class="src-link" href="${esc(s.url)}" target="_blank" rel="noopener">[${i + 1}] ${esc(s.name)}</a> — ${esc(s.title)}</li>`).join("");
 }
 
-function roadmap() {
-  return `<section class="margin-note" id="roadmap"><p class="eyebrow">The three-stage route · [1] [4] [8]</p>
-    <ol><li><b>60–80 h.</b> Story and optional jobs. Scan cars, study animals and take the balcony detour.</li>
-    <li><b>~100 h.</b> Finish the in-game 100% checklist, including 70 of 80 challenges.</li>
-    <li><b>~10 h.</b> Wrap up stranger strands and loose ends.</li></ol>
-    <p><b>One playthrough · ~200 h.</b> Use 15 manual saves plus autosave. Keep chapter boundary saves. Cheats disable trophies and saving [1][3][4][5].</p></section>`;
+function renderRoadmapChapters() {
+  $("#roadmap-chapter-list").innerHTML = CHAPTERS.map(c =>
+    `<li><b>${esc(c.title)}</b> — ${c.ids.length} troph${c.ids.length === 1 ? "y" : "ies"}</li>`).join("");
 }
 
-function balconyNote() {
-  return `<section class="margin-note warning"><p class="eyebrow">Before you leave Chapter 1</p><h3>Take the balcony detour.</h3><p>When Lucia steps onto Jason’s balcony, follow her and accept the meditation. The scene does not return after the chapter.</p><p class="annotation">One possible missable · [1] [4] [5] [8]</p><p><button class="text-button" data-view="missables">Read the warning →</button></p></section>`;
+function renderMissables() {
+  const atRisk = TROPHIES.filter(t => t.confidence !== "high").sort((a, b) => (a.id === 28 ? -1 : b.id === 28 ? 1 : a.id - b.id));
+  $("#missable-cards").innerHTML = atRisk.map(t => {
+    const isMasked = masked(t);
+    const name = isMasked ? "Story trophy · hidden until earned" : esc(t.name);
+    const desc = isMasked ? "hidden until earned" : esc(t.description);
+    const lastChance = t.id === 28
+      ? `<p><b>Last chance: Chapter 1 — before Tourist Trap.</b> Take Lucia&rsquo;s balcony meditation before the chapter ends.</p>` : "";
+    return `<article class="miss-card" id="miss-${t.id}">
+      <h3>${name}</h3>
+      <p class="t-desc">${desc}</p>
+      <p><span class="badge ${t.missable ? "flag-missable" : ""}">${t.missable ? "POSSIBLY MISSABLE" : "AT RISK"}</span>
+      <span class="confidence" data-level="${t.confidence}">${t.confidence} confidence</span>
+      <span class="badge">${esc(t.chapter)}</span></p>
+      ${lastChance}
+      <p>${esc(t.guide)}</p>
+      <button type="button" data-open-guide="${t.id}">Open guide</button>
+    </article>`;
+  }).join("");
 }
 
-function journal() {
-  return `<div class="folio"><section><p class="eyebrow">Route to platinum</p><h2>Journal index</h2>
-    <p class="lede">I keep a page for each chapter, then turn to the checklist after the credits.</p>
-    <div class="chapter-list">${chapters.map(([chapter, cue, ids], index) => `<details class="chapter" data-chapter="${index}" ${openChapters.has(index) ? "open" : ""}><summary><span class="index-number">0${index + 1}</span><span><strong>${chapter}</strong><span class="cue">${cue}</span></span><small>${ids.length} trophies</small></summary>
-    <ul>${ids.map(id => `<li><button type="button" data-open="${id}">${safe(displayName(tracks.get(id)))}</button> <small>· ${titleCase(tracks.get(id).grade)}${state.earned.has(id) ? " · Earned" : ""}</small></li>`).join("")}</ul></details>`).join("")}</div>
-    <details class="quota-list"><summary><b>The full 100% checklist</b> · [1] [4] [8]</summary><p>Progress › Stats › 100% Completion. These quotas add up to roughly 60% of everything in the game [1].</p><ul>${quotas.map(quota => `<li>${quota}</li>`).join("")}</ul></details>
-    </section><aside>${balconyNote()}${roadmap()}</aside></div>`;
+function renderJournal() {
+  $("#journal-chapters").innerHTML = CHAPTERS.map(c => {
+    const items = c.ids.map(id => {
+      const t = byId(id);
+      const name = masked(t) ? "Story trophy · hidden until earned" : esc(t.name);
+      return `<li>${name} <span class="c-grade">${t.grade} · ${esc(t.chapter)}</span></li>`;
+    }).join("");
+    return `<details class="chapter"><summary>${esc(c.title)} · ${c.ids.length} trophies</summary><ul>${items}</ul></details>`;
+  }).join("");
 }
 
-function trophyCard(trophy) {
-  const { id, grade, chapter, stage, confidence, character } = trophy;
-  const earned = state.earned.has(id);
-  const hidden = masked(trophy);
-  const open = openGuides.has(id) && !hidden;
-  return `<article class="row" id="trophy-${id}" data-id="${id}" data-kind="${trophy.kind}" data-selected="${selection === id}" data-earned="${earned}">
-    <div class="row-head"><label class="earned"><input type="checkbox" data-earned-id="${id}" aria-label="Mark trophy ${id} earned" ${earned ? "checked" : ""}></label>
-    <button type="button" class="guide-toggle" data-guide="${id}" aria-expanded="${open}" aria-controls="guide-${id}" ${hidden ? "disabled" : ""}>
-    <span><strong>${safe(displayName(trophy))}</strong><span class="official">${safe(hidden ? redacted : trophy.description)}</span></span>
-    <span class="row-meta"><span>#${String(id).padStart(2, "0")}</span><span>${grade}</span><span class="confidence" data-level="${confidence}">${confidence}</span><span aria-hidden="true">${open ? "−" : "+"}</span></span></button></div>
-    <div class="guide" id="guide-${id}" ${open ? "" : "hidden"}>${hidden ? "" : `<p class="eyebrow">${chapter} · ${stage} · ${character === "both" ? "Jason & Lucia" : titleCase(character)}${trophy.missable ? " · Possible missable" : ""}</p>
-    <p>${safe(trophy.guide)}</p><ol>${trophy.steps.map(step => `<li>${safe(step.text)} <span class="cites">${namedCites(step.cites)}</span></li>`).join("")}</ol>
-    <p class="cites">Sources · ${namedCites(trophy.sources)}</p>`}</div></article>`;
+function renderSources() {
+  $("#source-list").innerHTML = SOURCES.map((s, i) =>
+    `<li id="source-${i + 1}"><b>[${i + 1}]</b> ${esc(s.name)} — ${esc(s.title)} — <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a></li>`).join("");
+  $("#disputes").innerHTML = DISPUTES.map(d =>
+    `<div class="dispute" id="${d.id}"><h4>${d.id} — ${esc(d.topic)}</h4><p><b>Side A:</b> ${esc(d.a)}</p><p><b>Side B:</b> ${esc(d.b)}</p><p><b>Our call.</b> ${esc(d.call)}</p></div>`).join("");
 }
 
-function filteredTrophies() {
-  const query = state.query.trim().toLowerCase();
-  return [...tracks.values()].filter(trophy => {
-    if (!matchesCharacter(trophy, state.character)) return false;
-    if (Object.keys(options).some(key => state[key] && state[key] !== trophy[key])) return false;
-    const searchable = masked(trophy) ? "" : `${trophy.name} ${trophy.description} ${trophy.guide} ${trophy.steps.map(step => step.text).join(" ")}`.toLowerCase();
-    return !query || searchable.includes(query);
-  }).sort((first, second) => Number(second.missable) - Number(first.missable) || first.id - second.id);
+function renderPrintList() {
+  $("#print-list").innerHTML = TROPHIES.map(t => `<li>☑ ${esc(t.name)}</li>`).join("");
 }
 
-function tracker() {
-  const visible = filteredTrophies();
-  return `<div class="tracker-top"><div><p class="eyebrow">Earned stamps</p><h2>Trophy tracker</h2></div><div class="tools"><button id="export" type="button">Export JSON</button><button id="import-button" type="button">Import JSON</button><input id="import" type="file" accept=".json,application/json" hidden></div></div>
-    <div class="filters">${Object.entries(options).map(([key, values]) => `<label>${titleCase(key)}<select id="filter-${key}" data-filter="${key}"><option value="">All</option>${values.map(value => `<option value="${value}" ${state[key] === value ? "selected" : ""}>${titleCase(value)}</option>`).join("")}</select></label>`).join("")}<button id="clear-filters" type="button">Clear filters</button></div>
-    <div class="tracker-meta"><p><b>${visible.length} / ${tracks.size} trophies</b> · <span id="dual-count">${characterCounts()}</span></p><p><kbd>j</kbd> / <kbd>k</kbd> select · <kbd>x</kbd> mark · <kbd>/</kbd> search</p></div>
-    ${visible.length ? visible.map(trophyCard).join("") : `<p class="empty">${state.kind === "online" ? "No online trophies — GTA VI has none [1][4]" : "No trophies match these filters."}</p>`}`;
+function renderAll() {
+  renderTopbar();
+  renderAudit();
+  renderTabs();
+  renderTracker();
+  renderRoadmapChapters();
+  renderMissables();
+  renderJournal();
+  renderSources();
+  renderPrintList();
 }
 
-function missables() {
-  return `<div class="folio"><section class="warning-list"><p class="eyebrow">Chapter 1 · Time-sensitive</p><h2>Missables</h2><p class="lede">There is one possible missable. Open the note below for the full meditation route.</p>${trophyCard(tracks.get(28))}</section><aside>
-    <section class="margin-note warning"><p class="eyebrow">Save before leaving</p><h3>Keep a Chapter 1 save.</h3><p>Take Lucia’s optional balcony meditation at Jason’s house when she offers. If the chapter has ended, the balcony scene is gone, so a save from before the scene may help [1][4][5][8].</p><p>The trophy requirement for that extra point remains unconfirmed. See D1 in Sources.</p></section></aside></div>`;
-}
-
-function plan() {
-  const tasks = [[28, 5, "Take the Chapter 1 balcony detour"], [16, 15, "Try missing activity types"], [35, 10, "Scan traffic"], [31, 20, "Scan landmarks"], [2, 20, "Start the opening story route"], [19, 25, "Win new races"], [32, 25, "Batch short challenges"], [15, 30, "Work through stunt spots"], [14, 30, "Work through the 100% checklist"]];
-  const scheduled = [];
-  let remaining = sessionMinutes;
-  for (const [id, minutes, note] of tasks) {
-    const trophy = tracks.get(id);
-    if (state.earned.has(id) || !matchesCharacter(trophy, state.character) || minutes > remaining) continue;
-    scheduled.push({ trophy, minutes, note });
-    remaining -= minutes;
-  }
-  if (remaining >= 10) {
-    const next = chapters.flatMap(chapter => chapter[2]).map(id => tracks.get(id))
-      .find(trophy => !state.earned.has(trophy.id) && matchesCharacter(trophy, state.character) && !scheduled.some(task => task.trophy.id === trophy.id));
-    if (next) scheduled.push({ trophy: next, minutes: Math.min(remaining, 30), note: "Work on the next journal entry" });
-  }
-  return `<p class="eyebrow">Plan a session</p><h2>Run planner</h2><p class="lede">Session estimates are time blocks for making progress. Skip anything your current chapter has yet to unlock.</p>
-    <div class="plan-options" aria-label="Session length">${[30, 60, 120].map(minutes => `<button type="button" data-minutes="${minutes}" aria-pressed="${sessionMinutes === minutes}">${minutes} min</button>`).join("")}</div>
-    <section class="plan" aria-label="Session plan"><ul>${scheduled.map(({ trophy, minutes, note }) => `<li data-task="${trophy.id}"><span>${trophy.missable ? `<b class="annotation">Missable first · </b>` : ""}${safe(displayName(trophy))}${masked(trophy) ? "" : ` · <em>${note}</em>`}</span><strong>${minutes} min</strong></li>`).join("")}</ul>
-    ${scheduled.length ? "" : "<p>No unearned trophies fit this session.</p>"}<p id="plan-total"><b>Total: ${scheduled.reduce((total, task) => total + task.minutes, 0)} / ${sessionMinutes} min</b></p></section>`;
-}
-
-function sourcePage() {
-  const tally = Object.fromEntries(options.confidence.map(level => [level, [...tracks.values()].filter(trophy => trophy.confidence === level).length]));
-  return `<div class="folio"><section><p class="eyebrow">Research ledger</p><h2>Sources &amp; disagreements</h2><p class="lede">Field notes on where the 18 guides agree, and which call I use when they differ.</p>
-    <div class="disputes">${disputes.map(([title, sides, call], index) => `<article class="dispute" id="D${index + 1}"><h3><span class="index-number">D${index + 1}</span> · ${safe(title)}</h3><p>${safe(sides)}</p><p><b class="annotation">Our call.</b> ${safe(call)}</p></article>`).join("")}</div></section>
-    <aside><section class="margin-note"><p class="eyebrow">18 numbered sources</p><ol class="source-list">${sources.map((name, index) => `<li id="source-${index + 1}">[${index + 1}] ${safe(name)}</li>`).join("")}</ol></section>
-    <section class="margin-note" id="confidence-summary"><p class="eyebrow">Method confidence</p><p><b>${tally.high} High</b> · corroborated method<br><b>${tally.medium} Medium</b> · single-source or partly unresolved<br><b>${tally.low} Low</b> · exact trigger unresolved</p></section>${roadmap()}</aside></div>`;
-}
-
-const renderers = { journal, tracker, missables, planner: plan, sources: sourcePage };
-
-function render(focusSelector) {
-  document.body.dataset.view = state.view;
-  progress();
-  if (byId("search").value !== state.query) byId("search").value = state.query;
-  byId("spoiler").checked = state.spoiler;
-  byId("character").value = state.character || "both";
-  for (const tab of byId("tabs").querySelectorAll("button")) {
-    if (tab.dataset.view === state.view) tab.setAttribute("aria-current", "page");
-    else tab.removeAttribute("aria-current");
-  }
-  if (state.view === "missables" && !missablesVisited) {
-    missablesVisited = true;
-    openGuides.add(28);
-  }
-  byId("content").innerHTML = renderers[state.view]();
-  if (focusSelector) document.querySelector(focusSelector)?.focus({ preventScroll: true });
-}
-
-function update(focusSelector) {
+function showView(view) {
+  state.view = view;
+  renderTabs();
   save();
-  render(focusSelector);
 }
 
-function changeEarned(id, checked, focusSelector) {
-  if (checked) state.earned.add(id);
-  else state.earned.delete(id);
-  selection = id;
-  update(focusSelector);
-}
-
-function exportProgress() {
-  const blob = new Blob([JSON.stringify({ version: 1, ...snapshot() }, null, 2)], { type: "application/json" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "leonida-field-notes.json";
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-}
-
-async function importProgress(input) {
-  const file = input.files[0];
-  if (!file) return;
-  try {
-    const parsed = JSON.parse(await file.text());
-    if (parsed?.version !== 1 || !Array.isArray(parsed.earned) || !parsed.earned.every(id => tracks.has(id))) throw new Error("Invalid backup");
-    state = cleanState({ ...parsed, view: "tracker" });
-    update("#export");
-    notify("Journal imported.");
-  } catch {
-    notify("Could not import this file. Choose a Leonida Field Notes JSON backup.");
-  } finally {
-    input.value = "";
-  }
-}
-
-async function copyLink() {
+function toggleEarned(id) {
+  if (state.earned.has(id)) state.earned.delete(id);
+  else state.earned.add(id);
   save();
-  try {
-    await navigator.clipboard.writeText(location.href);
-    notify("Journal link copied.");
-  } catch {
-    const field = document.createElement("textarea");
-    field.value = location.href;
-    field.style.position = "fixed";
-    field.style.top = "-100px";
-    document.body.append(field);
-    field.select();
-    const copied = document.execCommand("copy");
-    field.remove();
-    byId("copy").focus();
-    notify(copied ? "Journal link copied." : "Copy the journal link from your address bar.");
-  }
+  renderTopbar();
+  renderTracker();
+  renderMissables();
+  renderJournal();
 }
 
-function bind() {
-  document.querySelector(".skip").addEventListener("click", event => {
-    event.preventDefault();
-    byId("content").focus();
+function buildPlan(minutes) {
+  const blocks = [{ mins: 15, html: `Missable first · <b>Positive Mental Attitude</b> — take the balcony meditation before Chapter 1 ends.` }];
+  const want = minutes / 15;
+  for (const id of ROADMAP_ORDER) {
+    if (blocks.length >= want) break;
+    if (id === 28) continue;
+    const t = byId(id);
+    blocks.push({ mins: 15, html: `<b>${esc(t.name)}</b> — ${t.grade} · ${esc(t.chapter)} · ${t.kind}.` });
+  }
+  const total = blocks.reduce((n, b) => n + b.mins, 0);
+  $("#plan-total").textContent = `Total: ${total} / ${minutes} min`;
+  $("#plan").innerHTML = blocks.map(b => `<li><strong>${b.mins} min</strong> ${b.html}</li>`).join("");
+}
+
+function setStatus(msg) {
+  $("#status").textContent = msg;
+}
+
+function bindEvents() {
+  document.querySelectorAll("#tabs button").forEach(btn => {
+    btn.addEventListener("click", () => showView(btn.dataset.view));
   });
 
-  document.addEventListener("click", event => {
-    const button = event.target.closest("button");
-    if (!button) return;
-    const { view, open, guide, minutes } = button.dataset;
-    if (view) {
-      state.view = view;
-      update(view === "missables" ? `#tabs [data-view="${view}"]` : undefined);
-    } else if (open) {
-      const id = Number(open);
-      state = cleanState({ earned: [...state.earned], spoiler: state.spoiler, view: "tracker" });
-      openGuides.add(id);
-      selection = id;
-      update();
-      byId(`trophy-${id}`).scrollIntoView({ block: "center" });
-      document.querySelector(`[data-earned-id="${id}"]`).focus({ preventScroll: true });
-    } else if (guide) {
-      const id = Number(guide);
-      if (openGuides.has(id)) openGuides.delete(id);
-      else openGuides.add(id);
-      selection = id;
-      progress();
-      byId("content").innerHTML = renderers[state.view]();
-      document.querySelector(`[data-guide="${id}"]`)?.focus({ preventScroll: true });
-    } else if (minutes) {
-      sessionMinutes = Number(minutes);
-      render(`[data-minutes="${minutes}"]`);
-    } else if (button.id === "clear-filters") {
-      for (const key of [...Object.keys(fields), "query"]) state[key] = "";
-      update("#clear-filters");
-    } else if (button.id === "export") exportProgress();
-    else if (button.id === "import-button") byId("import").click();
-    else if (button.id === "copy") copyLink();
-    else if (button.id === "print") window.print();
+  $("#spoiler").addEventListener("change", e => {
+    state.spoiler = e.target.checked;
+    save();
+    renderTracker();
+    renderMissables();
+    renderJournal();
   });
 
-  document.addEventListener("change", event => {
-    const input = event.target;
-    if (input.id === "spoiler") { state.spoiler = input.checked; update(); }
-    else if (input.id === "character") { state.character = input.value === "both" ? "" : input.value; update(); }
-    else if (input.dataset.filter) { state[input.dataset.filter] = input.value; update(`#${input.id}`); }
-    else if (input.dataset.earnedId) changeEarned(Number(input.dataset.earnedId), input.checked, `[data-earned-id="${input.dataset.earnedId}"]`);
-    else if (input.id === "import") importProgress(input);
+  $("#search").addEventListener("input", e => { state.search = e.target.value; renderTracker(); });
+  $("#filter-kind").addEventListener("change", e => { state.kind = e.target.value; state.chip = "all"; renderTracker(); });
+  $("#filter-grade").addEventListener("change", e => { state.grade = e.target.value; state.chip = "all"; renderTracker(); });
+  $("#filter-chapter").addEventListener("change", e => { state.chapter = e.target.value; renderTracker(); });
+  $("#filter-confidence").addEventListener("change", e => { state.confidence = e.target.value; renderTracker(); });
+  $("#character").addEventListener("change", e => { state.character = e.target.value; renderTracker(); });
+  $("#clear-filters").addEventListener("click", () => {
+    state.search = ""; state.kind = "all"; state.grade = "all"; state.chapter = "all";
+    state.confidence = "all"; state.character = "both"; state.chip = "all";
+    $("#search").value = ""; $("#filter-kind").value = "all"; $("#filter-grade").value = "all";
+    $("#filter-chapter").value = "all"; $("#filter-confidence").value = "all"; $("#character").value = "both";
+    renderTracker();
   });
 
-  byId("search").addEventListener("input", event => {
-    state.query = event.target.value.slice(0, 150);
-    state.view = "tracker";
-    update();
+  $("#chips").addEventListener("click", e => {
+    const btn = e.target.closest("[data-chip]");
+    if (!btn) return;
+    const key = btn.dataset.chip;
+    if (key === "all") {
+      state.kind = "all"; state.grade = "all"; state.chip = "all";
+      $("#filter-kind").value = "all"; $("#filter-grade").value = "all";
+    } else if (["story", "missable", "collectibles", "activities", "online"].includes(key)) {
+      state.kind = key; state.chip = "all";
+      $("#filter-kind").value = key;
+    } else if (key.startsWith("grade-")) {
+      state.grade = { "grade-p": "platinum", "grade-g": "gold", "grade-s": "silver", "grade-b": "bronze" }[key];
+      state.chip = "all";
+      $("#filter-grade").value = state.grade;
+    } else {
+      state.chip = key;
+    }
+    renderTracker();
   });
 
-  byId("content").addEventListener("toggle", event => {
-    if (!event.target.matches(".chapter")) return;
-    const index = Number(event.target.dataset.chapter);
-    if (event.target.open) openChapters.add(index);
-    else openChapters.delete(index);
-  }, true);
+  $("#trophy-list").addEventListener("change", e => {
+    const box = e.target.closest("[data-earned-id]");
+    if (!box) return;
+    const id = Number(box.dataset.earnedId);
+    if (box.checked) state.earned.add(id); else state.earned.delete(id);
+    save();
+    renderTopbar();
+    renderTracker();
+    renderMissables();
+    renderJournal();
+  });
 
-  document.addEventListener("keydown", event => {
-    if (event.altKey || event.metaKey || event.ctrlKey || event.target.matches("input:not([type=checkbox]),select,textarea,[contenteditable]")) return;
-    if (event.key === "/") { event.preventDefault(); byId("search").focus(); return; }
-    if (!["j", "k", "x"].includes(event.key)) return;
-    const cards = [...document.querySelectorAll(".row[data-id]")];
-    if (!cards.length) return;
-    event.preventDefault();
-    const current = cards.findIndex(card => Number(card.dataset.id) === selection);
-    if (event.key === "x") {
-      if (current >= 0 && !event.repeat) changeEarned(selection, !state.earned.has(selection), `[data-earned-id="${selection}"]`);
+  $("#trophy-list").addEventListener("click", e => {
+    const cite = e.target.closest("[data-cite]");
+    if (cite) {
+      e.preventDefault();
+      showView("sources");
+      const li = $(`#source-${cite.dataset.cite}`);
+      if (li) li.scrollIntoView({ block: "center" });
       return;
     }
-    const index = current < 0 ? (event.key === "j" ? 0 : cards.length - 1) : (current + (event.key === "j" ? 1 : -1) + cards.length) % cards.length;
-    selection = Number(cards[index].dataset.id);
-    for (const card of cards) card.dataset.selected = String(Number(card.dataset.id) === selection);
-    cards[index].querySelector("input").focus({ preventScroll: true });
-    cards[index].scrollIntoView({ block: "nearest" });
+    const counter = e.target.closest("[data-count]");
+    if (counter) {
+      const id = Number(counter.dataset.count);
+      const next = Math.max(0, Math.min(18, (state.counts[id] || 0) + Number(counter.dataset.delta)));
+      state.counts[id] = next;
+      save();
+      const label = $("#count-28");
+      if (label) label.textContent = `YOUR COUNT — ${next} / 18 meditations`;
+      return;
+    }
+    const toggle = e.target.closest("[data-guide]");
+    if (!toggle) return;
+    const id = Number(toggle.dataset.guide);
+    state.openGuide = state.openGuide === id ? null : id;
+    renderTracker();
   });
 
-  window.addEventListener("hashchange", () => { state = cleanState(hashState() ?? localState()); update(); });
+  $("#missable-cards").addEventListener("click", e => {
+    const btn = e.target.closest("[data-open-guide]");
+    if (!btn) return;
+    const id = Number(btn.dataset.openGuide);
+    state.openGuide = id;
+    showView("tracker");
+    renderTracker();
+    const row = $(`#trophy-${id}`);
+    if (row) row.scrollIntoView({ block: "start" });
+  });
+
+  document.querySelectorAll("[data-minutes]").forEach(btn => {
+    btn.addEventListener("click", () => buildPlan(Number(btn.dataset.minutes)));
+  });
+
+  $("#export").addEventListener("click", () => {
+    const data = { version: 1, earned: [...state.earned].sort((a, b) => a - b), counts: state.counts };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "leonida-field-notes.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setStatus("Journal exported.");
+  });
+
+  $("#import").addEventListener("change", e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (data.version !== 1 || !Array.isArray(data.earned)) throw new Error("bad file");
+        state.earned = new Set(data.earned.filter(n => Number.isInteger(n) && n >= 1 && n <= 55));
+        if (data.counts && typeof data.counts === "object") state.counts = data.counts;
+        save();
+        renderTopbar();
+        renderTracker();
+        renderMissables();
+        renderJournal();
+        setStatus("Journal imported.");
+      } catch (err) {
+        setStatus("Import failed — not a Leonida Field Notes file.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  $("#copy").addEventListener("click", async () => {
+    const hash = buildHash();
+    location.hash = hash;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(location.href);
+    } catch (err) { /* headless shells deny clipboard: the hash is the link */ }
+    setStatus("Link copied — the address bar now holds this journal.");
+  });
+
+  $("#print").addEventListener("click", () => window.print());
+
+  document.addEventListener("keydown", e => {
+    const tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "/") { e.preventDefault(); $("#search").focus(); return; }
+    if (e.key !== "j" && e.key !== "k" && e.key !== "x") return;
+    const visible = visibleTrophies();
+    if (!visible.length) return;
+    let idx = visible.findIndex(t => t.id === state.selectedId);
+    if (idx < 0) idx = 0;
+    if (e.key === "j") idx = Math.min(visible.length - 1, idx + 1);
+    if (e.key === "k") idx = Math.max(0, idx - 1);
+    state.selectedId = visible[idx].id;
+    if (e.key === "x") { toggleEarned(state.selectedId); return; }
+    renderTracker();
+    const row = $(`#trophy-${state.selectedId}`);
+    if (row) row.scrollIntoView({ block: "nearest" });
+  });
 }
 
-async function start() {
-  const response = await fetch("./data/trophies.json");
-  if (!response.ok) throw new Error("Trophy data unavailable");
-  const { trophies } = await response.json();
-  for (const trophy of trophies) tracks.set(trophy.id, trophy);
-  state = cleanState(hashState() ?? localState());
-  if (hashState()) save();
-  bind();
-  render();
+async function init() {
+  try {
+    const res = await fetch("data/trophies.json");
+    const data = await res.json();
+    TROPHIES = data.trophies;
+  } catch (err) {
+    $("#trophy-list").innerHTML = `<p class="empty">Could not load data/trophies.json.</p>`;
+    return;
+  }
+  loadStored();
+  loadHash();
+  $("#search").value = state.search;
+  $("#filter-kind").value = state.kind;
+  $("#filter-grade").value = state.grade;
+  $("#filter-chapter").value = state.chapter;
+  $("#filter-confidence").value = state.confidence;
+  $("#character").value = state.character;
+  save();
+  renderAll();
+  bindEvents();
 }
 
-start().catch(() => { byId("content").textContent = "Could not open the trophy data. Open the app from a local static server."; });
+init();
