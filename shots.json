@@ -1,6 +1,1 @@
-[
-  { "file": "1-journal.jpg", "path": "/", "view": "journal", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "2-tracker.jpg", "path": "/", "view": "tracker", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "3-missables.jpg", "path": "/", "view": "missables", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "4-sources.jpg", "path": "/", "view": "sources", "viewport": { "width": 1280, "height": 800 } }
-]
+[{"file":"1-tracker.jpg","label":"Tracker with guide #1 open","path":"/","view":"tracker","viewport":{"height":800,"width":1280}},{"file":"2-missables.jpg","label":"Missables and at-risk cards","path":"/","view":"missables","viewport":{"height":800,"width":1280}},{"file":"3-sources.jpg","label":"Numbered sources and disputes","path":"/","view":"sources","viewport":{"height":800,"width":1280}},{"file":"4-journal.jpg","label":"Journal chapters","path":"/","view":"journal","viewport":{"height":800,"width":1280}}]
